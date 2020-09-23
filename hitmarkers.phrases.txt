@@ -1,0 +1,83 @@
+"Phrases"
+{
+	"DISABLED"
+	{
+		"en"		"This command is currently {darkred}disabled{default}."
+		"es"		"Este comando esta actualmente {darkred}desactivado{default}."
+	}
+	
+	"MENU_TITLE"
+	{
+		"en"		"Hitmarker Menu.\nChoose whatever you want:"
+		"es"		"Hitmarker Menu.\nElegi la opcion que mas te guste:"
+	}
+	
+	"ENEMIE"
+	{
+		"#format"	"{1:s}"
+		"en"		"You have {1}{default} the hitmarker against {orange}enemies/zombies."
+		"es"		"Has {1}{default} el hitmarker contra {orange}enemigos/zombies."
+	}
+	
+	"OBJECT"
+	{
+		"#format"	"{1:s}"
+		"en"		"You have {1}{default} the hitmarker against {orange}objects/bosses."
+		"es"		"Has {1}{default} el hitmarker contra {orange}objectos/jefes."
+	}
+	
+	"SOUND"
+	{
+		"#format"	"{1:s}"
+		"en"		"You have {1}{default} the hitmarker {orange}sound effect."
+		"es"		"Has {1}{default} el {orange}efecto de sonido."
+	}
+	
+	"OVERLAY_1"
+	{
+		"#format"	"{1:i}"
+		"en"		"You have chosen enemies hitmarker {orange}overlay Nº{1}."
+		"es"		"Elegiste el {orange}overlay Nº{1}{default} contra enemigos/zombies."
+	}
+	
+	"OVERLAY_2"
+	{
+		"#format"	"{1:i}"
+		"en"		"You have chosen objects/bosses hitmarker {orange}overlay Nº{1}."
+		"es"		"Elegiste el {orange}overlay Nº{1}{default} contra objetos/jefes."
+	}
+
+	"LINE_1"
+	{
+		"#format"	"{1:s}"
+		"en"		"Enemies: {1}"
+		"es"		"Enemigos: {1}"
+	}
+	"LINE_2"
+	{
+		"#format"	"{1:s}"
+		"en"		"Objects: {1}"
+		"es"		"Objetos: {1}"
+	}
+
+	"LINE_3"
+	{
+		"#format"	"{1:s}"
+		"en"		"Sound effect: {1}"
+		"es"		"Efecto de sonido: {1}"
+	}
+
+	"LINE_4"
+	{
+		"#format"	"{1:i}"
+		"en"		"Skin for enemies: {1}"
+		"es"		"Hitmarker para enemigos: {1}"
+	}
+	
+	"LINE_5"
+	{
+		"#format"	"{1:i}"
+		"en"		"Skin for objects: {1}"
+		"es"		"Hitmarker para objetos: {1}"
+	}
+}
