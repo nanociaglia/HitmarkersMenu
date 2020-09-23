@@ -11,16 +11,22 @@
 #define HitmarkerOverlay3Vtf "overlays/belialg/hitmarkers/hitmarker2.vtf"
 #define HitmarkerOverlay4Vtf "overlays/belialg/hitmarkers/hitmarker3.vtf"
 #define HitmarkerOverlay5Vtf "overlays/belialg/hitmarkers/hitmarker4.vtf"
+#define HitmarkerOverlay6Vtf "overlays/belialg/hitmarkers/hitmarker5.vtf"
+#define HitmarkerOverlay7Vtf "overlays/belialg/hitmarkers/hitmarker6.vtf"
 #define HitmarkerOverlay1VtfD "materials/overlays/belialg/hitmarkers/hitmarker0.vtf"
 #define HitmarkerOverlay2VtfD "materials/overlays/belialg/hitmarkers/hitmarker1.vtf"
 #define HitmarkerOverlay3VtfD "materials/overlays/belialg/hitmarkers/hitmarker2.vtf"
 #define HitmarkerOverlay4VtfD "materials/overlays/belialg/hitmarkers/hitmarker3.vtf"
 #define HitmarkerOverlay5VtfD "materials/overlays/belialg/hitmarkers/hitmarker4.vtf"
+#define HitmarkerOverlay6VtfD "materials/overlays/belialg/hitmarkers/hitmarker5.vtf"
+#define HitmarkerOverlay7VtfD "materials/overlays/belialg/hitmarkers/hitmarker6.vtf"
 #define HitmarkerOverlay1Vmt "materials/overlays/belialg/hitmarkers/hitmarker0.vmt"
 #define HitmarkerOverlay2Vmt "materials/overlays/belialg/hitmarkers/hitmarker1.vmt"
 #define HitmarkerOverlay3Vmt "materials/overlays/belialg/hitmarkers/hitmarker2.vmt"
 #define HitmarkerOverlay4Vmt "materials/overlays/belialg/hitmarkers/hitmarker3.vmt"
 #define HitmarkerOverlay5Vmt "materials/overlays/belialg/hitmarkers/hitmarker4.vmt"
+#define HitmarkerOverlay6Vmt "materials/overlays/belialg/hitmarkers/hitmarker5.vmt"
+#define HitmarkerOverlay7Vmt "materials/overlays/belialg/hitmarkers/hitmarker6.vmt"
 #define HitmarkerSoundEffect "belialg/hm.mp3"
 #define HitmarkerSoundEffectD "sound/belialg/hm.mp3"
 #define HitmarkerOverlay "overlays/belialg/hitmarkers/hitmarker"
@@ -33,7 +39,7 @@ public Plugin myinfo =
 	name			= "Hitmarkers",
 	author			= "Nano",
 	description		= "Show a hitmarker when you shoot enemies/bosses/objects (with sound effect)",
-	version			= "1.0",
+	version			= "1.1",
 	url				= "https://steamcommunity.com/id/nano2k06/"
 };
 
@@ -51,8 +57,8 @@ Handle 	g_hEnemiesCookie 	= INVALID_HANDLE,
 int 	g_iOverlayEnemies	[MAXPLAYERS+1],
 		g_iOverlayObjects	[MAXPLAYERS+1];
 
-ConVar	g_cGlobal, g_cEnemiesGlobal, g_cObjectsGlobal,
-		g_cSoundFXGlobal, g_cTimerReset, g_cSoundFXVolume;
+ConVar	g_cGlobal, g_cEnemiesGlobal, g_cObjectsGlobal, g_cSoundFXGlobal, 
+		g_cTimerReset, g_cSoundFXVolume, g_cObserver;
 
 public void OnPluginStart()
 {	
@@ -64,9 +70,10 @@ public void OnPluginStart()
 	
 	HookEvent("player_hurt", Event_PlayerHurt);
 
-	HookEntityOutput("func_physbox", 				"OnHealthChanged", Hook_OnDamage);
-	HookEntityOutput("func_physbox_multiplayer",	"OnHealthChanged", Hook_OnDamage);
-	HookEntityOutput("func_breakable", 				"OnHealthChanged", Hook_OnDamage);
+	HookEntityOutput("func_physbox", 				"OnHealthChanged", 	Hook_OnDamage);
+	HookEntityOutput("func_physbox_multiplayer",	"OnHealthChanged", 	Hook_OnDamage);
+	HookEntityOutput("func_breakable", 				"OnHealthChanged", 	Hook_OnDamage);
+	HookEntityOutput("math_counter", 				"OutValue", 		Hook_OnDamageCounter);
 	
 	RegConsoleCmd("sm_hitmarker", 	Command_HM);
 	RegConsoleCmd("sm_hitmarkers", 	Command_HM);
@@ -79,6 +86,7 @@ public void OnPluginStart()
 	g_cObjectsGlobal 	= CreateConVar("sm_hitmarkers_objects", 		"1", 		"1 = Enable objects hitmarker | 0 = Disable (Default 1)");
 	g_cSoundFXGlobal 	= CreateConVar("sm_hitmarkers_soundfx", 		"1", 		"1 = Enable sound effects | 0 = Disable (Default 1)");
 	g_cTimerReset 		= CreateConVar("sm_hitmarkers_resethm", 		"0.5", 		"Time in seconds to restart the hitmarker (hide it after shoot) (Default 0.5)");
+	g_cObserver 		= CreateConVar("sm_hitmarkers_observer", 		"1", 		"Spectators can see hitmarkers and listen the sound effect when they're spectating a target? | 1 = Enabled | 0 = Disabled (Default 1)");
 	g_cSoundFXVolume 	= CreateConVar("sm_hitmarkers_volume", 			"1.0", 		"Volume of the sound effect (Default/Max: 1.0)", _, true, 0.1, true, 1.0);
 	
 	LoadTranslations("hitmarkers.phrases");
@@ -96,15 +104,15 @@ public void OnPluginStart()
 	}
 }
 
-//---------------------------------------
-// Purpose: Voids
-//---------------------------------------
-
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	g_bLateLoad = late;
 	return APLRes_Success;
 }
+
+//---------------------------------------
+// Purpose: Voids
+//---------------------------------------
 
 public void OnMapStart()
 {
@@ -115,6 +123,8 @@ public void OnMapStart()
 	PrecacheModel(HitmarkerOverlay3Vmt);
 	PrecacheModel(HitmarkerOverlay4Vmt);
 	PrecacheModel(HitmarkerOverlay5Vmt);
+	PrecacheModel(HitmarkerOverlay6Vmt);
+	PrecacheModel(HitmarkerOverlay7Vmt);
 
 	AddFileToDownloadsTable(HitmarkerSoundEffectD);
 	AddFileToDownloadsTable(HitmarkerOverlay1VtfD);
@@ -122,11 +132,15 @@ public void OnMapStart()
 	AddFileToDownloadsTable(HitmarkerOverlay3VtfD);
 	AddFileToDownloadsTable(HitmarkerOverlay4VtfD);
 	AddFileToDownloadsTable(HitmarkerOverlay5VtfD);
+	AddFileToDownloadsTable(HitmarkerOverlay6VtfD);
+	AddFileToDownloadsTable(HitmarkerOverlay7VtfD);
 	AddFileToDownloadsTable(HitmarkerOverlay1Vmt);
 	AddFileToDownloadsTable(HitmarkerOverlay2Vmt);
 	AddFileToDownloadsTable(HitmarkerOverlay3Vmt);
 	AddFileToDownloadsTable(HitmarkerOverlay4Vmt);
 	AddFileToDownloadsTable(HitmarkerOverlay5Vmt);
+	AddFileToDownloadsTable(HitmarkerOverlay6Vmt);
+	AddFileToDownloadsTable(HitmarkerOverlay7Vmt);
 }
 
 public void OnPluginEnd()
@@ -220,21 +234,73 @@ void SetClientCookies(int client)
 	SetClientCookie(client, g_hOverlayObjects, sValue);
 }
 
-void ShowOverlayZombie(int client)
+void ShowOverlayEnemies(int client)
 {
-	char buffer[128];
-	FormatEx(buffer, sizeof(buffer), "%s%d.vtf", HitmarkerOverlay, g_iOverlayEnemies[client]);
-	ClientCommand(client, "r_screenoverlay \"%s\"", buffer);
+	char sBuffer[128];
+	FormatEx(sBuffer, sizeof(sBuffer), "%s%d.vtf", HitmarkerOverlay, g_iOverlayEnemies[client]);
+	ClientCommand(client, "r_screenoverlay \"%s\"", sBuffer);
+	
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if(!g_cObserver.BoolValue)
+		{
+			return;
+		}
+
+		if (!IsClientInGame(i) || !IsClientObserver(i))
+			continue;
+
+		int iObserverMode = GetEntProp(i, Prop_Send, "m_iObserverMode");
+		if (iObserverMode != 4 && iObserverMode != 5)
+			continue;
+
+		if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") != client)
+			continue;
+
+		ClientCommand(i, "r_screenoverlay \"%s\"", sBuffer);
+		CreateTimer(GetConVarFloat(g_cTimerReset), Timer_RemoveOverlay, i);
+
+		if(g_cSoundFXGlobal.IntValue >= 1)
+		{
+			EmitSoundToClient(i, HitmarkerSoundEffect, SOUND_FROM_PLAYER, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, GetConVarFloat(g_cSoundFXVolume));
+		}
+	}
 }
 
-void ShowOverlayBoss(int client)
+void ShowOverlayObjects(int client)
 {
-	char buffer[128];
-	FormatEx(buffer, sizeof(buffer), "%s%d.vtf", HitmarkerOverlay, g_iOverlayObjects[client]);
-	ClientCommand(client, "r_screenoverlay \"%s\"", buffer);
+	char sBuffer[128];
+	FormatEx(sBuffer, sizeof(sBuffer), "%s%d.vtf", HitmarkerOverlay, g_iOverlayObjects[client]);
+	ClientCommand(client, "r_screenoverlay \"%s\"", sBuffer);
+	
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if(!g_cObserver.BoolValue)
+		{
+			return;
+		}
+
+		if (!IsClientInGame(i) || !IsClientObserver(i))
+			continue;
+
+		int iObserverMode = GetEntProp(i, Prop_Send, "m_iObserverMode");
+		if (iObserverMode != 4 && iObserverMode != 5)
+			continue;
+
+		if (GetEntPropEnt(i, Prop_Send, "m_hObserverTarget") != client)
+			continue;
+
+		ClientCommand(i, "r_screenoverlay \"%s\"", sBuffer);
+		CreateTimer(GetConVarFloat(g_cTimerReset), Timer_RemoveOverlay, i);
+
+		if(g_cSoundFXGlobal.IntValue >= 1)
+		{
+			EmitSoundToClient(i, HitmarkerSoundEffect, SOUND_FROM_PLAYER, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, GetConVarFloat(g_cSoundFXVolume));
+		}
+	}
 }
 
-void StopOverlayToClient(int client, const char[] overlaypath)
+void StopOverlay(int client, const char[] overlaypath)
 {
     ClientCommand(client, "r_screenoverlay \"%s\"", overlaypath);
 }
@@ -268,103 +334,103 @@ public void HMMenu(int client)
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
-public int MenuHandler_HMenu(Menu menu, MenuAction action, int client, int param2)
-{
-	switch(action)
-	{
-		case MenuAction_End:
-		{
-			if(client != MenuEnd_Selected)
-				delete menu;
-		}
-		case MenuAction_Select:
-		{
-			switch(param2)
-			{
-				case 0:
-				{
-					g_bEnemies[client] = !g_bEnemies[client];
-					CPrintToChat(client, PREFIX, "ENEMIE", g_bEnemies[client] ? "{blue}Enabled" : "{darkred}Disabled");
-				}
-				case 1:
-				{
-					g_bObjects[client] = !g_bObjects[client];
-					CPrintToChat(client, PREFIX, "OBJECT", g_bObjects[client] ? "{blue}Enabled" : "{darkred}Disabled");
-				}
-				case 2:
-				{
-					g_bHasSound[client] = !g_bHasSound[client];
-					CPrintToChat(client, PREFIX, "SOUND", g_bHasSound[client] ? "{blue}Enabled" : "{darkred}Disabled");
-				}
-				case 3:
-				{
-					if(g_iOverlayEnemies[client] >= 4)
-					{
-						g_iOverlayEnemies[client] = 0;
-					}
-					else
-					{
-						g_iOverlayEnemies[client]++;
-					}
-					CPrintToChat(client, PREFIX, "OVERLAY_1", g_iOverlayEnemies[client]);
-				}
-				case 4:
-				{
-					if(g_iOverlayObjects[client] >= 4)
-					{
-						g_iOverlayObjects[client] = 0;
-					}
-					else
-					{
-						g_iOverlayObjects[client]++;
-					}
-					CPrintToChat(client, PREFIX, "OVERLAY_2", g_iOverlayObjects[client]);
-				}
-				default: return 0;
-			}
-			DisplayMenu(menu, client, MENU_TIME_FOREVER);
-		}
-		case MenuAction_DisplayItem:
-		{
-			char sBuffer[32];
-			switch(param2)
-			{
-				case 0:
-				{
-					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_1", g_bEnemies[client] ? "Enabled" : "Disabled");
-				}
-				case 1:
-				{
-					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_2", g_bObjects[client] ? "Enabled" : "Disabled");
-				}
-				case 2:
-				{
-					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_3", g_bHasSound[client] ? "Enabled" : "Disabled");
-				}
-				case 3:
-				{
-					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_4", g_iOverlayEnemies[client]);
-				}
-				case 4:
-				{
-					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_5", g_iOverlayObjects[client]);
-				}
-			}
-			return RedrawMenuItem(sBuffer);
-		}
-	}
-	return 0;
+public int MenuHandler_HMenu(Menu menu, MenuAction action, int client, int param2)	
+{	
+	switch(action)	
+	{	
+		case MenuAction_End:	
+		{	
+			if(client != MenuEnd_Selected)	
+				delete menu;	
+		}	
+		case MenuAction_Select:	
+		{	
+			switch(param2)	
+			{	
+				case 0:	
+				{	
+					g_bEnemies[client] = !g_bEnemies[client];	
+					CPrintToChat(client, PREFIX, "ENEMIE", g_bEnemies[client] ? "{blue}Enabled" : "{darkred}Disabled");	
+				}	
+				case 1:	
+				{	
+					g_bObjects[client] = !g_bObjects[client];	
+					CPrintToChat(client, PREFIX, "OBJECT", g_bObjects[client] ? "{blue}Enabled" : "{darkred}Disabled");	
+				}	
+				case 2:	
+				{	
+					g_bHasSound[client] = !g_bHasSound[client];	
+					CPrintToChat(client, PREFIX, "SOUND", g_bHasSound[client] ? "{blue}Enabled" : "{darkred}Disabled");	
+				}	
+				case 3:	
+				{	
+					if(g_iOverlayEnemies[client] >= 6)	
+					{	
+						g_iOverlayEnemies[client] = 0;	
+					}	
+					else	
+					{	
+						g_iOverlayEnemies[client]++;	
+					}	
+					CPrintToChat(client, PREFIX, "OVERLAY_1", g_iOverlayEnemies[client]);	
+				}	
+				case 4:	
+				{	
+					if(g_iOverlayObjects[client] >= 6)	
+					{	
+						g_iOverlayObjects[client] = 0;	
+					}	
+					else	
+					{	
+						g_iOverlayObjects[client]++;	
+					}	
+					CPrintToChat(client, PREFIX, "OVERLAY_2", g_iOverlayObjects[client]);	
+				}	
+				default: return 0;	
+			}	
+			DisplayMenu(menu, client, MENU_TIME_FOREVER);	
+		}	
+		case MenuAction_DisplayItem:	
+		{	
+			char sBuffer[32];	
+			switch(param2)	
+			{	
+				case 0:	
+				{	
+					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_1", g_bEnemies[client] ? "Enabled" : "Disabled");	
+				}	
+				case 1:	
+				{	
+					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_2", g_bObjects[client] ? "Enabled" : "Disabled");	
+				}	
+				case 2:	
+				{	
+					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_3", g_bHasSound[client] ? "Enabled" : "Disabled");	
+				}	
+				case 3:	
+				{	
+					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_4", g_iOverlayEnemies[client]);	
+				}	
+				case 4:	
+				{	
+					Format(sBuffer, sizeof(sBuffer), "%t", "LINE_5", g_iOverlayObjects[client]);	
+				}	
+			}	
+			return RedrawMenuItem(sBuffer);	
+		}	
+	}	
+	return 0;	
 }
 
 //---------------------------------------
 // Purpose: Timers
 //---------------------------------------
 
-public Action NoOverlay(Handle timer, any client)
+public Action Timer_RemoveOverlay(Handle timer, any client)
 {
 	if (IsClientInGame(client))
 	{
-		StopOverlayToClient(client, "");
+		StopOverlay(client, "");
 	}
 }
 
@@ -384,8 +450,8 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 		
 	if(g_bEnemies[attacker])
 	{
-		ShowOverlayZombie(attacker);
-		CreateTimer(GetConVarFloat(g_cTimerReset), NoOverlay, attacker);
+		ShowOverlayEnemies(attacker);
+		CreateTimer(GetConVarFloat(g_cTimerReset), Timer_RemoveOverlay, attacker);
 	}
 	
 	if(g_cSoundFXGlobal.IntValue >= 1 && g_bHasSound[attacker])
@@ -394,21 +460,58 @@ public void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public void Hook_OnDamage(const char[] output, int caller, int activator, float delay)
+public void Hook_OnDamageCounter(const char[] output, int caller, int activator, float delay)
 {
-	if (!IsClientInGame(activator) || !activator || !g_cObjectsGlobal.BoolValue)
+	if (!activator || !g_cObjectsGlobal.BoolValue)
 	{
 		return;
 	}
 
-	if(g_bObjects[activator])
+	if(IsValidDamage(activator))
 	{
-		ShowOverlayBoss(activator);
-		CreateTimer(GetConVarFloat(g_cTimerReset), NoOverlay, activator);
+		ShowOverlayObjects(activator);
+		CreateTimer(GetConVarFloat(g_cTimerReset), Timer_RemoveOverlay, activator);
 	}
 
-	if(g_cSoundFXGlobal.IntValue >= 1 && g_bHasSound[activator])
+	if(g_cSoundFXGlobal.IntValue >= 1 && IsValidSound(activator))
 	{
 		EmitSoundToClient(activator, HitmarkerSoundEffect, SOUND_FROM_PLAYER, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, GetConVarFloat(g_cSoundFXVolume));
 	}
+}
+
+public void Hook_OnDamage(const char[] output, int caller, int activator, float delay)
+{
+	if (!activator || !g_cObjectsGlobal.BoolValue)
+	{
+		return;
+	}
+
+	if(IsValidDamage(activator))
+	{
+		ShowOverlayObjects(activator);
+		CreateTimer(GetConVarFloat(g_cTimerReset), Timer_RemoveOverlay, activator);
+	}
+
+	if(g_cSoundFXGlobal.IntValue >= 1 && IsValidSound(activator))
+	{
+		EmitSoundToClient(activator, HitmarkerSoundEffect, SOUND_FROM_PLAYER, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, GetConVarFloat(g_cSoundFXVolume));
+	}
+}
+
+bool IsValidDamage(int client, bool nobots = true)
+{
+	if (client <= 0 || client > MaxClients || !IsClientConnected(client) || !g_bObjects[client] || (nobots && IsFakeClient(client)))
+	{
+		return false;
+	}
+	return IsClientInGame(client);
+}
+
+bool IsValidSound(int client, bool nobots = true)
+{
+	if (client <= 0 || client > MaxClients || !IsClientConnected(client) || !g_bHasSound[client] || (nobots && IsFakeClient(client)))
+	{
+		return false;
+	}
+	return IsClientInGame(client);
 }
